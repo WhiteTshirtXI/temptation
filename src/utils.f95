@@ -17,7 +17,7 @@ subroutine poisson(p, ut, vt, dx, dt, beta, tol, ni, nj)
   do 
      do i = 2, ni-1
         do j = 2, nj-1
-           p_new(i,j) = 0.25*beta*(p(i+1,j) + p(i-1,j) + p(i,j+1) + p(i,j-1) - q(i,j)) + (1.0-beta)*p(i,j)
+           p_new(i,j) = 0.25*beta*(p(i+1,j) + p_new(i-1,j) + p(i,j+1) + p_new(i,j-1) - q(i,j)) + (1.0-beta)*p(i,j)
         enddo
      enddo
      if (maxval(abs(p_new-p)) < tol) then
@@ -33,9 +33,59 @@ subroutine poisson(p, ut, vt, dx, dt, beta, tol, ni, nj)
         exit
      else 
         p = p_new
+        ! do i=1, ni
+        !    p(i,1) = p_new(i,2)
+        !    p(i,nj) = p_new(i,nj-1)
+        ! enddo
+        ! do j=1, nj
+        !    p(1,j) = p_new(2,j)
+        !    p(ni,j) = p_new(ni-1,j)
+        ! enddo
+
      endif
   enddo
 end subroutine poisson
+
+
+subroutine poisson_mod(p, ut, vt, dx, dt, beta, tol, ni, nj)
+  implicit none
+  integer :: ni, nj, i, j
+  real(8), intent(in) :: beta, tol, dx, dt
+  real(8), intent(in), dimension(ni+1, nj) :: ut
+  real(8), intent(in), dimension(ni, nj-1) :: vt
+  real(8), intent(inout), dimension(ni, nj) :: p
+  real(8), dimension(ni,nj) :: p_new, p_old, q
+  p_old = p
+  p_new = p
+  do i=2, ni-1
+     do j=2, nj-1
+        q(i,j) = ((ut(i+1,j) - ut(i,j))/dx + (vt(i,j) - vt(i,j-1))/dx)/dt*dx*dx
+     enddo
+  enddo
+  p_old = p
+  do 
+     do i = 2, ni-1
+        do j = 2, nj-1
+           p(i,j) = 0.25*beta*(p(i+1,j) + p(i-1,j) + p(i,j+1) + p(i,j-1) - q(i,j)) + (1.0-beta)*p(i,j)
+        enddo
+     enddo
+     
+     if (maxval(abs(p_old-p)) < tol) then
+        p = p_new
+        do i=1, ni
+           p(i,1) = p(i,2)
+           p(i,nj) = p(i,nj-1)
+        enddo
+        do j=1, nj
+           p(1,j) = p(2,j)
+           p(ni,j) = p(ni-1,j)
+        enddo
+        exit
+     else 
+        p_old = p
+     endif
+  enddo
+end subroutine poisson_mod
 
 subroutine set_boundary(u, v, uw, ni, nj)
   implicit none
