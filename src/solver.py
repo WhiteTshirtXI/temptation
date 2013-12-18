@@ -2,7 +2,10 @@ from pylab import *
 from utils import *
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+try:
+    import matplotlib.animation as animation
+except:
+    pass
 
 class Solver(object):
     """
@@ -117,30 +120,33 @@ class Solver(object):
 
         
     def run(self):
-        if self.animate:
-            fig, ax = plt.subplots()
-            c = ax.quiver(self.x, self.y, self.uu, self.vv)
-            def update(data):
-                ax.cla()
-                im = ax.quiver(self.x, self.y, self.uu, self.vv)
-                title("Iteration: %i, Residue: %e"%(self.counter,self.residue))
-                return im,
-            
-            ani = animation.FuncAnimation(fig, update, self.aniloop, interval=1)
-            plt.show()
-        else:
-            self.loop()
+        try:
+            if self.animate:
+                fig, ax = plt.subplots()
+                c = ax.quiver(self.x, self.y, self.uu, self.vv)
+                def update(data):
+                    ax.cla()
+                    im = ax.quiver(self.x, self.y, self.uu, self.vv)
+                    title("Iteration: %i, Residue: %e"%(self.counter,self.residue))
+                    return im,
+                
+                ani = animation.FuncAnimation(fig, update, self.aniloop, interval=1)
+                plt.show()
+            else:
+                self.loop()
+        except:
+            raise AssertionError("Your matplotlib version doesn't support animation!")
             
 if __name__ == "__main__":
     # init solver
-    s = Solver(160)
-    s.Re = 10.0
+    s = Solver(60)
+    s.Re = 1000.0
     s.uw = array([0.0,1.0,0.0,0.0])
-    s.dt = .5e-5
+    s.dt = .5e-7
     s.beta = 1.4
     s.tol_p = 1e-2
     s.tol_u = 1e-8
     s.maxiter = 500000
-    s.animate = True
+    s.animate = False
     s.run()
 

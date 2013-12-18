@@ -1,0 +1,15 @@
+from pylab import *
+
+u = loadtxt("u.txt")
+v = loadtxt("v.txt")
+x = loadtxt("x.txt")
+y = loadtxt("y.txt")
+w = loadtxt("w.txt")
+contourf(x, y, w)
+colorbar()
+quiver(x, y, u, v)
+n, n = shape(x)
+xx = linspace(0, 1.0, n)
+figure()
+streamplot(xx, xx, v, u, 3)
+show()
