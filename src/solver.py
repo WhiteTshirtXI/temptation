@@ -32,20 +32,19 @@ class Solver(object):
         
         self.Li = 1.0
         self.Lj = 1.0
-        self.dx = self.Lj/(self.Nj-1)
-        self.dy = self.Li/(self.Ni-1)
+        self.dx = self.Lj/(N-1)
+        self.dy = self.Li/(N-1)
 
         self.u = zeros([self.Ni+1, self.Nj], order="F")
         self.v = zeros([self.Ni, self.Nj-1], order="F")
         self.p = zeros([self.Ni, self.Nj], order="F")
 
-        x = linspace(0, 1.0, self.Ni)
-        y = linspace(0, 1.0, self.Ni)
-        self.xx, self.yy = meshgrid(x, y)
-        for i in range(self.Ni):
-            for j in range(self.Nj):
-                self.xx[i,j] = i*self.dx
-                self.yy[i,j] = j*self.dy
+        self.x = zeros([N, N])
+        self.y = zeros([N, N])
+        for i in range(N):
+            for j in range(N):
+                self.x[i,j] = i*self.dx
+                self.y[i,j] = j*self.dy
 
         self.Re = 100.0
         self.dt = 1e-5
@@ -75,19 +74,33 @@ class Solver(object):
 
 
     def write_data(self):
-        np.savetxt("u.txt", self.u)
-        np.savetxt("v.txt", self.v)
-        np.savetxt("p.txt", self.p)
-        np.savetxt("x.txt", self.xx)
-        np.savetxt("y.txt", self.yy)
+        file_name = __file__.replace(".py","") + ".npz"
+        np.savez(file_name, u=self.u, v=self.v, p=self.p, x=self.x, y=self.y)
         
+
+        
+    def step(self):
+        set_boundary(self.u, self.v, self.uw)
+        set_uv_t(self.u, self.v, self.ut, self.vt, self.Re, self.dx, self.dt)
+        poisson(self.p, self.ut, self.vt, self.dx, self.dt, self.beta, self.tol_p)
+        update_uv(self.u, self.v, self.ut, self.vt, self.p, self.dt, self.dx)
+       
     def loop(self):
         self.counter = 0
         while 1:
-            set_boundary(self.u, self.v, self.uw)
-            set_uv_t(self.u, self.v, self.ut, self.vt, self.Re, self.dx, self.dt)
-            poisson(self.p, self.ut, self.vt, self.dx, self.dt, self.beta, self.tol_p)
-            update_uv(self.u, self.v, self.ut, self.vt, self.p, self.dt, self.dx)
+            self.step()
+            if self.check_convergence():
+                self.write_data()
+                break
+            else:
+                if self.counter%100 == 0:
+                    self.write_data()
+        
+
+    def aniloop(self):
+        self.counter = 0
+        while 1:
+            self.step()
             if self.check_convergence():
                 self.write_data()
                 break
@@ -95,6 +108,8 @@ class Solver(object):
                 if self.counter%100 == 0:
                     self.write_data()
                     yield self.u[1:-1,1:-1],
+
+        
     def run(self):
         if self.animate:
             fig, ax = plt.subplots()
@@ -110,22 +125,21 @@ class Solver(object):
                 title("Iteration: %i, Residue: %e"%(self.counter,self.residue))
                 return im,
             
-            ani = animation.FuncAnimation(fig, update, self.loop, interval=1)
-            #ani.save('u.mpeg', writer='ffmpeg', fps=10);
+            ani = animation.FuncAnimation(fig, update, self.aniloop, interval=1)
             plt.show()
         else:
             self.loop()
-
+            
 if __name__ == "__main__":
     # init solver
     s = Solver(80)
-    s.Re = 1000.0
+    s.Re = 10.0
     s.uw = array([0.0,1.0,0.0,0.0])
-    s.dt = .5e-7
+    s.dt = .5e-5
     s.beta = 1.4
     s.tol_p = 1e-2
     s.tol_u = 1e-8
     s.maxiter = 500000
-    s.animate = True
+    s.animate = False
     s.run()
 
