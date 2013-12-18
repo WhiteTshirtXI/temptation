@@ -39,8 +39,8 @@ class Solver(object):
         self.v = zeros([self.Ni, self.Nj-1], order="F")
         self.p = zeros([self.Ni, self.Nj], order="F")
 
-        self.x = zeros([N, N])
-        self.y = zeros([N, N])
+        self.x = zeros([N, N], order="F")
+        self.y = zeros([N, N], order="F")
         for i in range(N):
             for j in range(N):
                 self.x[i,j] = i*self.dx
@@ -58,7 +58,9 @@ class Solver(object):
         self.uw[1] = 1.0
         self.p_old = np.zeros_like(self.p)
         self.u_old = copy(self.u)
-
+        self.uu = np.zeros_like(self.x)
+        self.vv = np.zeros_like(self.x)
+        self.w = np.zeros_like(self.x)
 
     def check_convergence(self):
         self.residue = abs(self.u_old-self.u).max()
@@ -71,11 +73,14 @@ class Solver(object):
                 print self.residue, self.counter
             return False
 
-
-
     def write_data(self):
         file_name = __file__.replace(".py","") + ".npz"
-        np.savez(file_name, u=self.u, v=self.v, p=self.p, x=self.x, y=self.y)
+        np.savez(file_name, u=self.u, v=self.v, p=self.p, x=self.x, y=self.y, w=self.w)
+        savetxt("w.txt", self.w)
+        savetxt("v.txt", self.vv)
+        savetxt("u.txt", self.uu)
+        savetxt("x.txt", self.x)
+        savetxt("y.txt", self.y)
         
 
         
@@ -84,7 +89,8 @@ class Solver(object):
         set_uv_t(self.u, self.v, self.ut, self.vt, self.Re, self.dx, self.dt)
         poisson(self.p, self.ut, self.vt, self.dx, self.dt, self.beta, self.tol_p)
         update_uv(self.u, self.v, self.ut, self.vt, self.p, self.dt, self.dx)
-       
+        calc_vorticity(self.u, self.v, self.uu, self.vv, self.w, self.dx, self.dy)
+
     def loop(self):
         self.counter = 0
         while 1:
@@ -113,15 +119,10 @@ class Solver(object):
     def run(self):
         if self.animate:
             fig, ax = plt.subplots()
-            levels = linspace(-1.0,1.0,50)
-            c = ax.contourf(self.u[1:-1,1:-1], levels)
-            plt.colorbar(c)
-            xlabel("x_index")
-            ylabel("y_index")
-            title("u-contour")
+            c = ax.quiver(self.x, self.y, self.uu, self.vv)
             def update(data):
                 ax.cla()
-                im = ax.contourf(np.rot90(data[0],k=3), levels)
+                im = ax.quiver(self.x, self.y, self.uu, self.vv)
                 title("Iteration: %i, Residue: %e"%(self.counter,self.residue))
                 return im,
             
@@ -132,7 +133,7 @@ class Solver(object):
             
 if __name__ == "__main__":
     # init solver
-    s = Solver(80)
+    s = Solver(160)
     s.Re = 10.0
     s.uw = array([0.0,1.0,0.0,0.0])
     s.dt = .5e-5
@@ -140,6 +141,6 @@ if __name__ == "__main__":
     s.tol_p = 1e-2
     s.tol_u = 1e-8
     s.maxiter = 500000
-    s.animate = False
+    s.animate = True
     s.run()
 

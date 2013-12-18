@@ -196,4 +196,29 @@ subroutine update_uv(u, v, ut, vt, p, dt, dx, ni, nj)
   enddo
   
 end subroutine update_uv
-    
+
+subroutine calc_vorticity(u, v, uu, vv, w, dx, dy, ni, nj, n)
+  implicit none
+  integer ni, nj, n, i, j, ii, jj
+  real(8) :: uy1, uy2, vx1, vx2
+  real(8), intent(in) :: dx, dy
+  real(8), intent(inout), dimension(n,n) :: uu, vv, w
+  real(8), intent(in), dimension(ni+1,nj) :: u
+  real(8), intent(in), dimension(ni,nj-1) :: v
+  
+  do ii=1, n
+     do jj=1, n
+        i = ii + 1
+        j = jj + 1
+        uy1 = (u(i,j+1) - u(i,j-1))/2.0/dy
+        uy2 = (u(i-1,j+1) - u(i-1,j-1))/2.0/dy
+        vx1 = (v(i+1,j) - v(i-1,j))/2.0/dx
+        vx2 = (v(i+1,j-1) - v(i-1,j-1))/2.0/dx
+        w(ii,jj) = 0.5*(uy1 + uy2) - 0.5*(vx1 + vx2)
+        uu(ii,jj) = 0.5*(u(i+1,j) + u(i,j))
+        vv(ii,jj) = 0.5*(v(i,j) + v(i,j-1))
+     enddo
+  enddo
+
+end subroutine calc_vorticity
+   
