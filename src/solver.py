@@ -139,10 +139,10 @@ class Solver(object):
             
 if __name__ == "__main__":
     # init solver
-    s = Solver(60)
-    s.Re = 1000.0
+    s = Solver(150)
+    s.Re = 400.0
     s.uw = array([0.0,1.0,0.0,0.0])
-    s.dt = .5e-7
+    s.dt = .5e-6
     s.beta = 1.4
     s.tol_p = 1e-2
     s.tol_u = 1e-8
