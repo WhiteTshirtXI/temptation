@@ -44,6 +44,9 @@ class Solver(object):
 
         self.x = zeros([N, N], order="F")
         self.y = zeros([N, N], order="F")
+        self.dxx = self.Lj/(N+1)
+        self.dyy = self.Li/(N+1)
+
         for i in range(N):
             for j in range(N):
                 self.x[i,j] = i*self.dx
@@ -77,18 +80,14 @@ class Solver(object):
             return False
 
     def write_data(self):
-        file_name = __file__.replace(".py","") + ".npz"
+        file_name = "%i_%.2f.npz"%(self.Ni-2, self.Re)# __file__.replace(".py","") + ".npz"
         np.savez(file_name, u=self.u, v=self.v, p=self.p, x=self.x, y=self.y, w=self.w)
-        savetxt("w.txt", self.w)
-        savetxt("v.txt", self.vv)
-        savetxt("u.txt", self.uu)
-        savetxt("x.txt", self.x)
-        savetxt("y.txt", self.y)
+        np.savez("avg_"+file_name, w=self.w, v=self.vv, u=self.uu, x=self.x, y=self.y, p=self.p[1:-1,1:-1])
         
 
         
     def step(self):
-        set_boundary(self.u, self.v, self.uw)
+        set_boundary(self.u, self.v, self.ut, self.vt, self.uw)
         set_uv_t(self.u, self.v, self.ut, self.vt, self.Re, self.dx, self.dt)
         poisson(self.p, self.ut, self.vt, self.dx, self.dt, self.beta, self.tol_p)
         update_uv(self.u, self.v, self.ut, self.vt, self.p, self.dt, self.dx)
@@ -139,13 +138,13 @@ class Solver(object):
             
 if __name__ == "__main__":
     # init solver
-    s = Solver(150)
-    s.Re = 400.0
+    s = Solver(320)
+    s.Re = 1.0
     s.uw = array([0.0,1.0,0.0,0.0])
-    s.dt = .5e-6
-    s.beta = 1.4
-    s.tol_p = 1e-2
-    s.tol_u = 1e-8
+    s.beta = 0.8
+    s.tol_p = 1e-4
+    s.tol_u = 1e-10
+    s.dt = .1e-6
     s.maxiter = 500000
     s.animate = False
     s.run()

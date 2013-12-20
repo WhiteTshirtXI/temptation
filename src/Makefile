@@ -1,2 +1,2 @@
 all:
-	f2py -m utils -c utils.f90
+	f2py --fcompiler=intelem -m utils -c utils.f90
